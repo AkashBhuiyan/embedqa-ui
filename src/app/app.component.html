@@ -1,0 +1,74 @@
+<div class="app-container" [class.sidebar-collapsed]="stateService.sidebarCollapsed()">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            @if (!stateService.sidebarCollapsed()) {
+                <div class="logo">
+                    <span class="logo-icon">⚡</span>
+                    <span class="logo-text">EmbedQA</span>
+                </div>
+            }
+            <button mat-icon-button class="collapse-btn" (click)="stateService.toggleSidebar()"
+                    [matTooltip]="stateService.sidebarCollapsed() ? 'Expand' : 'Collapse'">
+                <mat-icon>{{ stateService.sidebarCollapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+               class="nav-item" [matTooltip]="stateService.sidebarCollapsed() ? 'Request Builder' : ''"
+               matTooltipPosition="right">
+                <mat-icon>send</mat-icon>
+                <span class="nav-text">Request Builder</span>
+            </a>
+
+            <a routerLink="/collections" routerLinkActive="active" class="nav-item"
+               [matTooltip]="stateService.sidebarCollapsed() ? 'Collections' : ''"
+               matTooltipPosition="right">
+                <mat-icon>folder</mat-icon>
+                <span class="nav-text">Collections</span>
+            </a>
+
+            <a routerLink="/environments" routerLinkActive="active" class="nav-item"
+               [matTooltip]="stateService.sidebarCollapsed() ? 'Environments' : ''"
+               matTooltipPosition="right">
+                <mat-icon>settings_applications</mat-icon>
+                <span class="nav-text">Environments</span>
+            </a>
+
+            <a routerLink="/history" routerLinkActive="active" class="nav-item"
+               [matTooltip]="stateService.sidebarCollapsed() ? 'History' : ''"
+               matTooltipPosition="right">
+                <mat-icon>history</mat-icon>
+                <span class="nav-text">History</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button mat-button [matMenuTriggerFor]="envMenu" class="env-selector"
+                    [matTooltip]="stateService.sidebarCollapsed() ? 'Environment' : ''"
+                    matTooltipPosition="right">
+                <mat-icon>public</mat-icon>
+                <span class="nav-text">{{ selectedEnvironment?.name || 'No Environment' }}</span>
+                <mat-icon class="nav-text">arrow_drop_down</mat-icon>
+            </button>
+            <mat-menu #envMenu="matMenu">
+                <button mat-menu-item (click)="selectEnvironment(null)">
+                    <mat-icon>block</mat-icon>
+                    <span>No Environment</span>
+                </button>
+                @for (env of environments; track env.id) {
+                    <button mat-menu-item (click)="selectEnvironment(env)">
+                        <mat-icon>{{ selectedEnvironment?.id === env.id ? 'check' : '' }}</mat-icon>
+                        <span>{{ env.name }}</span>
+                    </button>
+                }
+            </mat-menu>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <router-outlet></router-outlet>
+    </main>
+</div>
