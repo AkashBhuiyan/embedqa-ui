@@ -1,0 +1,39 @@
+<div class="kv-editor">
+    <div class="kv-row kv-header">
+        <div class="kv-checkbox"></div>
+        <div class="kv-key">{{ keyPlaceholder }}</div>
+        <div class="kv-value">{{ valuePlaceholder }}</div>
+        <div class="kv-actions"></div>
+    </div>
+
+    @for (pair of pairs; track $index) {
+        <div class="kv-row">
+            <div class="kv-checkbox">
+                <input type="checkbox"
+                       [checked]="pair.enabled"
+                       (change)="onToggle($index)">
+            </div>
+            <div class="kv-key">
+                <input type="text"
+                       [value]="pair.key"
+                       [placeholder]="keyPlaceholder"
+                       (input)="onKeyChange($index, $event)">
+            </div>
+            <div class="kv-value">
+                <input type="text"
+                       [value]="pair.value"
+                       [placeholder]="valuePlaceholder"
+                       (input)="onValueChange($index, $event)">
+            </div>
+            <div class="kv-actions">
+                <button class="btn-icon" (click)="onRemove($index)" [disabled]="pairs.length <= 1">
+                    <span class="icon">×</span>
+                </button>
+            </div>
+        </div>
+    }
+
+    <button class="btn-add" (click)="onAdd()">
+        <span class="icon">+</span> Add
+    </button>
+</div>

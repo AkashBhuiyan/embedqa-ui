@@ -1,4 +1,245 @@
-<div class="placeholder">
-    <h2>Request Builder</h2>
-    <p>Coming in next commit...</p>
+<div class="request-builder">
+    <!-- Tabs Bar -->
+    <div class="tabs-bar">
+        <div class="tabs-list">
+            @for (tab of tabs(); track tab.id) {
+                <div class="tab"
+                     [class.active]="tab.id === activeTabId()"
+                     (click)="selectTab(tab.id)">
+                    <span class="tab-method" [class]="getMethodClass(tab.request.method)">
+                        {{ tab.request.method }}
+                    </span>
+                    <span class="tab-name">{{ tab.name }}</span>
+                    @if (tab.dirty) {
+                        <span class="tab-dirty">•</span>
+                    }
+                    @if (tab.loading) {
+                        <span class="tab-loading">⟳</span>
+                    }
+                    <button class="tab-close" (click)="closeTab(tab.id, $event)">×</button>
+                </div>
+            }
+        </div>
+        <button class="btn-new-tab" (click)="createNewTab()">+</button>
+    </div>
+
+    @if (activeTab(); as tab) {
+        <!-- URL Bar -->
+        <div class="url-bar">
+            <select class="method-select"
+                    [value]="tab.request.method"
+                    [class]="getMethodClass(tab.request.method)"
+                    (change)="updateMethod($any($event.target).value)">
+                @for (method of httpMethods; track method) {
+                    <option [value]="method">{{ method }}</option>
+                }
+            </select>
+            <input type="text"
+                   class="url-input"
+                   placeholder="Enter request URL"
+                   [value]="tab.request.url"
+                   (input)="updateUrl($any($event.target).value)">
+            <button class="btn-send"
+                    [disabled]="tab.loading || !tab.request.url"
+                    (click)="sendRequest()">
+                @if (tab.loading) {
+                    Sending...
+                } @else {
+                    Send
+                }
+            </button>
+        </div>
+
+        <!-- Config Tabs -->
+        <div class="config-section">
+            <div class="config-tabs">
+                <button [class.active]="activeConfigTab === 'params'"
+                        (click)="activeConfigTab = 'params'">
+                    Params
+                    @if (tab.request.queryParams.length > 1 || tab.request.queryParams[0].key) {
+                        <span class="badge">{{ getParamsCount() }}</span>
+                    }
+                </button>
+                <button [class.active]="activeConfigTab === 'headers'"
+                        (click)="activeConfigTab = 'headers'">
+                    Headers
+                    @if (tab.request.headers.length > 1 || tab.request.headers[0].key) {
+                        <span class="badge">{{ getHeadersCount() }}</span>
+                    }
+                </button>
+                <button [class.active]="activeConfigTab === 'body'"
+                        (click)="activeConfigTab = 'body'">
+                    Body
+                </button>
+                <button [class.active]="activeConfigTab === 'auth'"
+                        (click)="activeConfigTab = 'auth'">
+                    Auth
+                    @if (tab.request.authType !== 'NONE') {
+                        <span class="badge auth-badge">✓</span>
+                    }
+                </button>
+            </div>
+
+            <div class="config-content">
+                <!-- Params Tab -->
+                @if (activeConfigTab === 'params') {
+                    <app-key-value-editor
+                            [pairs]="tab.request.queryParams"
+                            keyPlaceholder="Parameter"
+                            valuePlaceholder="Value"
+                            (pairsChange)="updateParams($event)">
+                    </app-key-value-editor>
+                }
+
+                <!-- Headers Tab -->
+                @if (activeConfigTab === 'headers') {
+                    <app-key-value-editor
+                            [pairs]="tab.request.headers"
+                            keyPlaceholder="Header"
+                            valuePlaceholder="Value"
+                            (pairsChange)="updateHeaders($event)">
+                    </app-key-value-editor>
+                }
+
+                <!-- Body Tab -->
+                @if (activeConfigTab === 'body') {
+                    <div class="body-config">
+                        <div class="body-type-selector">
+                            @for (type of bodyTypes; track type) {
+                                <label class="radio-label">
+                                    <input type="radio"
+                                           name="bodyType"
+                                           [value]="type"
+                                           [checked]="tab.request.bodyType === type"
+                                           (change)="updateBodyType(type)">
+                                    {{ type }}
+                                </label>
+                            }
+                        </div>
+                        @if (tab.request.bodyType !== 'NONE') {
+                            <textarea class="body-editor"
+                                      [value]="tab.request.body || ''"
+                                      placeholder="Enter request body..."
+                                      (input)="updateBody($any($event.target).value)">
+                            </textarea>
+                        }
+                    </div>
+                }
+
+                <!-- Auth Tab -->
+                @if (activeConfigTab === 'auth') {
+                    <div class="auth-config">
+                        <div class="auth-type-selector">
+                            <label>Auth Type:</label>
+                            <select [value]="tab.request.authType"
+                                    (change)="updateAuthType($any($event.target).value)">
+                                @for (type of authTypes; track type) {
+                                    <option [value]="type">{{ type.replace('_', ' ') }}</option>
+                                }
+                            </select>
+                        </div>
+
+                        @switch (tab.request.authType) {
+                            @case ('BEARER_TOKEN') {
+                                <div class="auth-fields">
+                                    <label>Token</label>
+                                    <input type="password"
+                                           placeholder="Enter bearer token"
+                                           [value]="tab.request.authConfig?.bearerToken || ''"
+                                           (input)="updateAuthConfig('bearerToken', $any($event.target).value)">
+                                </div>
+                            }
+                            @case ('BASIC_AUTH') {
+                                <div class="auth-fields">
+                                    <label>Username</label>
+                                    <input type="text"
+                                           placeholder="Username"
+                                           [value]="tab.request.authConfig?.basicUsername || ''"
+                                           (input)="updateAuthConfig('basicUsername', $any($event.target).value)">
+                                    <label>Password</label>
+                                    <input type="password"
+                                           placeholder="Password"
+                                           [value]="tab.request.authConfig?.basicPassword || ''"
+                                           (input)="updateAuthConfig('basicPassword', $any($event.target).value)">
+                                </div>
+                            }
+                            @case ('API_KEY') {
+                                <div class="auth-fields">
+                                    <label>API Key</label>
+                                    <input type="password"
+                                           placeholder="API Key"
+                                           [value]="tab.request.authConfig?.apiKey || ''"
+                                           (input)="updateAuthConfig('apiKey', $any($event.target).value)">
+                                    <label>Header Name</label>
+                                    <input type="text"
+                                           placeholder="X-API-Key"
+                                           [value]="tab.request.authConfig?.apiKeyHeaderName || 'X-API-Key'"
+                                           (input)="updateAuthConfig('apiKeyHeaderName', $any($event.target).value)">
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Response Section -->
+        <div class="response-section">
+            <div class="response-header">
+                <span class="response-title">Response</span>
+                @if (tab.response) {
+                    <div class="response-meta">
+                        <span class="status-badge" [class]="getStatusClass(tab.response.statusCode)">
+                            {{ tab.response.statusCode }} {{ tab.response.statusText }}
+                        </span>
+                        <span class="meta-item">{{ tab.response.responseTimeMs }} ms</span>
+                        <span class="meta-item">{{ formatSize(tab.response.bodySize) }}</span>
+                    </div>
+                }
+            </div>
+
+            @if (tab.loading) {
+                <div class="response-loading">
+                    <div class="spinner"></div>
+                    <span>Sending request...</span>
+                </div>
+            } @else if (tab.response) {
+                @if (!tab.response.success && tab.response.errorMessage) {
+                    <div class="response-error">
+                        <span class="error-icon">⚠</span>
+                        <span>{{ tab.response.errorMessage }}</span>
+                    </div>
+                } @else {
+                    <div class="response-tabs">
+                        <button [class.active]="activeResponseTab === 'body'"
+                                (click)="activeResponseTab = 'body'">Body</button>
+                        <button [class.active]="activeResponseTab === 'headers'"
+                                (click)="activeResponseTab = 'headers'">
+                            Headers ({{ tab.response.headers.length }})
+                        </button>
+                    </div>
+
+                    <div class="response-content">
+                        @if (activeResponseTab === 'body') {
+                            <pre class="response-body">{{ tab.response.body }}</pre>
+                        }
+                        @if (activeResponseTab === 'headers') {
+                            <div class="response-headers">
+                                @for (header of tab.response.headers; track header.name) {
+                                    <div class="header-row">
+                                        <span class="header-name">{{ header.name }}:</span>
+                                        <span class="header-value">{{ header.value }}</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            } @else {
+                <div class="response-empty">
+                    <span>Enter a URL and click Send to get a response</span>
+                </div>
+            }
+        </div>
+    }
 </div>
