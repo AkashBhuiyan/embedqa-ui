@@ -6,6 +6,7 @@ import {HttpMethod} from "@core/enums/HttpMethod";
 import {BodyType} from "@core/enums/BodyType";
 import {AuthType} from "@core/enums/AuthType";
 import {ApiResponse} from "@core/models/ApiResponse";
+import {RequestSummary} from "@core/models/RequestSummary";
 
 @Injectable({
     providedIn: 'root'
@@ -150,6 +151,35 @@ export class StateService {
                 return tab;
             })
         );
+    }
+
+    loadRequestInNewTab(request: RequestSummary): string {
+        const id = this.generateId();
+
+        const newTab: RequestTab = {
+            id,
+            name: request.name,
+            request: {
+                url: request.url,
+                method: request.method,
+                headers: [{key: '', value: '', enabled: true}],
+                queryParams: [{key: '', value: '', enabled: true}],
+                body: '',
+                bodyType: BodyType.NONE,
+                authType: AuthType.NONE,
+                timeout: 30000,
+                followRedirects: true,
+                verifySsl: true
+            },
+            loading: false,
+            dirty: false,
+            savedRequestId: request.id
+        };
+
+        this._tabs.update(tabs => [...tabs, newTab]);
+        this._activeTabId.set(id);
+
+        return id;
     }
 
     private generateId(): string {
