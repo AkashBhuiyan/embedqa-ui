@@ -47,7 +47,7 @@
                         </div>
                         <div class="header-right">
                             <span class="request-count">
-                                {{ collection.requestCount || collection.requests?.length || 0 }} requests
+                                {{ getRequestCount(collection) }} requests
                             </span>
                             <div class="actions">
                                 <button class="btn-icon" title="Edit" (click)="openEditModal(collection, $event)">

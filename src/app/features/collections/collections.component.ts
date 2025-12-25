@@ -148,6 +148,10 @@ export class CollectionsComponent implements OnInit {
         this.router.navigate(['/']);
     }
 
+    getRequestCount(collection: Collection): number {
+        return collection.requestCount || collection.requests?.length || 0;
+    }
+
     // Form helpers
     updateFormField(field: keyof CollectionDTO, value: string): void {
         this.formData.update(data => ({...data, [field]: value}));
