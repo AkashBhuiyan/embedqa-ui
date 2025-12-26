@@ -182,6 +182,24 @@ export class StateService {
         return id;
     }
 
+    loadRequestInNewTabSavedRequestId(request: ExecuteRequest, name: string, savedRequestId?: number): void {
+        const id = this.createNewTab();
+        this._tabs.update(tabs =>
+            tabs.map(tab => {
+                if (tab.id === id) {
+                    return {
+                        ...tab,
+                        name,
+                        request: {...request},
+                        savedRequestId,
+                        dirty: false
+                    };
+                }
+                return tab;
+            })
+        );
+    }
+
     private generateId(): string {
         return `tab_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     }
