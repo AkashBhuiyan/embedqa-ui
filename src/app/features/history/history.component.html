@@ -1,4 +1,253 @@
-<div class="placeholder">
-    <h2>History</h2>
-    <p>Coming soon...</p>
+<div class="history-container">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-left">
+            <h1>📜 Request History</h1>
+            <span class="subtitle">View and replay your recent API requests</span>
+        </div>
+        @if (entries().length > 0) {
+            <button class="btn btn-danger-outline" (click)="confirmClearAll()">
+                🗑️ Clear All
+            </button>
+        }
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input
+                    type="text"
+                    placeholder="Search by URL..."
+                    [ngModel]="searchQuery()"
+                    (ngModelChange)="searchQuery.set($event)"
+                    (keyup.enter)="applyFilters()"
+            />
+        </div>
+
+        <div class="filter-group">
+            <select
+                    [ngModel]="methodFilter()"
+                    (ngModelChange)="methodFilter.set($event)"
+                    class="filter-select"
+            >
+                <option value="">All Methods</option>
+                @for (method of httpMethods; track method) {
+                    <option [value]="method">{{ method }}</option>
+                }
+            </select>
+
+            <select
+                    [ngModel]="statusFilter()"
+                    (ngModelChange)="statusFilter.set($event)"
+                    class="filter-select"
+            >
+                <option value="all">All Status</option>
+                <option value="success">Success (2xx)</option>
+                <option value="error">Error (4xx/5xx)</option>
+            </select>
+
+            <button class="btn btn-secondary btn-sm" (click)="applyFilters()">
+                Apply
+            </button>
+
+            @if (searchQuery() || methodFilter() || statusFilter() !== 'all') {
+                <button class="btn btn-link" (click)="clearFilters()">
+                    Clear
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Error State -->
+    @if (error()) {
+        <div class="error-banner">
+            <span>⚠️ {{ error() }}</span>
+            <button class="btn-link" (click)="loadHistory()">Retry</button>
+        </div>
+    }
+
+    <!-- Loading State -->
+    @if (loading()) {
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading history...</p>
+        </div>
+    }
+
+    <!-- Empty State -->
+    @if (!loading() && entries().length === 0) {
+        <div class="empty-state">
+            <div class="empty-icon">📜</div>
+            <h2>No History Yet</h2>
+            <p>Your request history will appear here after you send some API requests.</p>
+        </div>
+    }
+
+    <!-- History List -->
+    @if (!loading() && entries().length > 0) {
+        <div class="history-list">
+            @for (entry of entries(); track trackByEntryId($index, entry)) {
+                <div
+                        class="history-entry"
+                        [class.expanded]="isExpanded(entry)"
+                        (click)="toggleExpand(entry)"
+                >
+                    <!-- Entry Header -->
+                    <div class="entry-header">
+                        <div class="entry-left">
+                            <span class="method-badge" [class]="getMethodClass(entry.method)">
+                                {{ entry.method }}
+                            </span>
+                            <div class="entry-info">
+                                <span class="entry-url" [title]="entry.url">
+                                    {{ getUrlPath(entry.url) }}
+                                </span>
+                                <span class="entry-host">{{ getUrlHost(entry.url) }}</span>
+                            </div>
+                        </div>
+
+                        <div class="entry-right">
+                            <div class="entry-meta">
+                                <span class="status-badge" [class]="getStatusClass(entry.statusCode)">
+                                    <span class="status-icon">{{ getStatusIcon(entry.statusCode) }}</span>
+                                    {{ entry.statusCode }}
+                                </span>
+                                <span class="response-time">{{ formatResponseTime(entry.responseTime) }}</span>
+                                <span class="response-size">{{ formatSize(entry.responseSize) }}</span>
+                                <span class="entry-time">{{ formatTime(entry.executedAt) }}</span>
+                            </div>
+                            <div class="entry-actions">
+                                <button
+                                        class="btn-icon"
+                                        title="Replay Request"
+                                        (click)="replayRequest(entry, $event)"
+                                >
+                                    ▶️
+                                </button>
+                                <button
+                                        class="btn-icon btn-danger"
+                                        title="Delete"
+                                        (click)="deleteEntry(entry, $event)"
+                                >
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Entry Details (Expanded) -->
+                    @if (isExpanded(entry)) {
+                        <div class="entry-details">
+                            @if (entry.request) {
+                                <div class="details-section">
+                                    <h4>Request</h4>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Full URL:</span>
+                                        <code class="detail-value">{{ entry.request.url }}</code>
+                                    </div>
+                                    @if (entry.request.headers && hasKeys(entry.request.headers)) {
+                                        <div class="detail-row">
+                                            <span class="detail-label">Headers:</span>
+                                            <div class="detail-value">
+                                                @for (header of objectEntries(entry.request.headers); track header[0]) {
+                                                    <div class="kv-item">
+                                                        <span class="kv-key">{{ header[0] }}:</span>
+                                                        <span class="kv-value">{{ header[1] }}</span>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                    @if (entry.request.body) {
+                                        <div class="detail-row">
+                                            <span class="detail-label">Body:</span>
+                                            <pre class="detail-value body-preview">{{ entry.request.body }}</pre>
+                                        </div>
+                                    }
+                                </div>
+
+                                <div class="details-section">
+                                    <h4>Response</h4>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Status:</span>
+                                        <span class="detail-value">
+                                            {{ entry.statusCode }} {{ entry.statusText }}
+                                        </span>
+                                    </div>
+                                    @if (entry.response?.headers && hasKeys(entry.response?.headers)) {
+                                        <div class="detail-row">
+                                            <span class="detail-label">Headers:</span>
+                                            <div class="detail-value">
+                                                @for (header of objectEntries(entry.response?.headers); track header[0]) {
+                                                    <div class="kv-item">
+                                                        <span class="kv-key">{{ header[0] }}:</span>
+                                                        <span class="kv-value">{{ header[1] }}</span>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                    @if (entry.response?.body) {
+                                        <div class="detail-row">
+                                            <span class="detail-label">Body:</span>
+                                            <pre class="detail-value body-preview">{{ entry.response?.body }}</pre>
+                                        </div>
+                                    }
+                                </div>
+                            } @else {
+                                <div class="loading-details">
+                                    <div class="spinner-small"></div>
+                                    <span>Loading details...</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Pagination -->
+        @if (pageInfo() && pageInfo()!.totalPages > 1) {
+            <div class="pagination">
+                <button
+                        class="btn btn-secondary btn-sm"
+                        [disabled]="pageInfo()!.first"
+                        (click)="goToPage(pageInfo()!.page - 1)"
+                >
+                    ← Previous
+                </button>
+                <span class="page-info">
+                    Page {{ pageInfo()!.page + 1 }} of {{ pageInfo()!.totalPages }}
+                </span>
+                <button
+                        class="btn btn-secondary btn-sm"
+                        [disabled]="pageInfo()!.last"
+                        (click)="goToPage(pageInfo()!.page + 1)"
+                >
+                    Next →
+                </button>
+            </div>
+        }
+    }
 </div>
+
+<!-- Clear Confirmation Modal -->
+@if (showClearConfirm()) {
+    <div class="modal-overlay" (click)="cancelClear()">
+        <div class="modal modal-sm" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Clear History</h2>
+                <button class="btn-close" (click)="cancelClear()">×</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to clear all request history?</p>
+                <p class="warning-text">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" (click)="cancelClear()">Cancel</button>
+                <button class="btn btn-danger" (click)="clearAllHistory()">Clear All</button>
+            </div>
+        </div>
+    </div>
+}
