@@ -123,6 +123,18 @@ export class StateService {
         );
     }
 
+    updateTabName(id: string, name: string): void {
+        this._tabs.update(tabs =>
+            tabs.map(tab => tab.id === id ? {...tab, name, dirty: false} : tab)
+        );
+    }
+
+    updateTabSavedRequestId(id: string, savedRequestId: number): void {
+        this._tabs.update(tabs =>
+            tabs.map(tab => tab.id === id ? {...tab, savedRequestId, dirty: false} : tab)
+        );
+    }
+
     private resetTab(id: string): void {
         this._tabs.update(tabs =>
             tabs.map(tab => {
