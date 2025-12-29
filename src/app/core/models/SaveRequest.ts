@@ -16,4 +16,7 @@ export interface SaveRequest {
     authType: AuthType;
     authConfig?: AuthConfig;
     collectionId?: number;
+    newCollectionName?: string;
+    newCollectionDescription?: string;
+    environmentId?: number;
 }

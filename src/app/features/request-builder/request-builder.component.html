@@ -39,6 +39,12 @@
                    placeholder="Enter request URL"
                    [value]="tab.request.url"
                    (input)="updateUrl($any($event.target).value)">
+            <button class="btn-save"
+                    [disabled]="!tab.request.url"
+                    (click)="openSaveModal()"
+                    title="Save Request">
+                💾
+            </button>
             <button class="btn-send"
                     [disabled]="tab.loading || !tab.request.url"
                     (click)="sendRequest()">
@@ -240,6 +246,145 @@
                     <span>Enter a URL and click Send to get a response</span>
                 </div>
             }
+        </div>
+    }
+
+    <!-- Save Request Modal -->
+    @if (showSaveModal()) {
+        <div class="modal-overlay" (click)="closeSaveModal()">
+            <div class="modal-content" (click)="$event.stopPropagation()">
+                <div class="modal-header">
+                    <h2>Save Request</h2>
+                    <button class="modal-close" (click)="closeSaveModal()">×</button>
+                </div>
+
+                <div class="modal-body">
+                    @if (saveSuccess()) {
+                        <div class="save-success">
+                            <span class="success-icon">✓</span>
+                            <span>Request saved successfully!</span>
+                        </div>
+                    } @else {
+                        <!-- Request Name -->
+                        <div class="form-group">
+                            <label for="requestName">Request Name *</label>
+                            <input type="text"
+                                   id="requestName"
+                                   [value]="saveForm().name"
+                                   (input)="updateSaveForm('name', $any($event.target).value)"
+                                   placeholder="Enter request name">
+                        </div>
+
+                        <!-- Request Description -->
+                        <div class="form-group">
+                            <label for="requestDescription">Description</label>
+                            <textarea id="requestDescription"
+                                      [value]="saveForm().description"
+                                      (input)="updateSaveForm('description', $any($event.target).value)"
+                                      placeholder="Optional description"
+                                      rows="2">
+                            </textarea>
+                        </div>
+
+                        <!-- Collection Options -->
+                        <div class="form-group">
+                            <label>Save to Collection</label>
+                            <div class="collection-options">
+                                <label class="radio-option">
+                                    <input type="radio"
+                                           name="collectionOption"
+                                           value="existing"
+                                           [checked]="saveForm().collectionOption === 'existing'"
+                                           (change)="updateSaveForm('collectionOption', 'existing')">
+                                    <span>Existing Collection</span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio"
+                                           name="collectionOption"
+                                           value="new"
+                                           [checked]="saveForm().collectionOption === 'new'"
+                                           (change)="updateSaveForm('collectionOption', 'new')">
+                                    <span>New Collection</span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio"
+                                           name="collectionOption"
+                                           value="none"
+                                           [checked]="saveForm().collectionOption === 'none'"
+                                           (change)="updateSaveForm('collectionOption', 'none')">
+                                    <span>No Collection</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Existing Collection Selector -->
+                        @if (saveForm().collectionOption === 'existing') {
+                            <div class="form-group">
+                                <label for="existingCollection">Select Collection</label>
+                                <select id="existingCollection"
+                                        [value]="saveForm().selectedCollectionId"
+                                        (change)="updateSaveForm('selectedCollectionId', +$any($event.target).value || null)">
+                                    <option [value]="null">-- Select a collection --</option>
+                                    @for (collection of collections(); track collection.id) {
+                                        <option [value]="collection.id">
+                                            {{ collection.name }} ({{ collection.requestCount }} requests)
+                                        </option>
+                                    }
+                                </select>
+                                @if (collections().length === 0) {
+                                    <p class="help-text">No collections found. Create a new one below.</p>
+                                }
+                            </div>
+                        }
+
+                        <!-- New Collection Fields -->
+                        @if (saveForm().collectionOption === 'new') {
+                            <div class="form-group">
+                                <label for="newCollectionName">Collection Name *</label>
+                                <input type="text"
+                                       id="newCollectionName"
+                                       [value]="saveForm().newCollectionName"
+                                       (input)="updateSaveForm('newCollectionName', $any($event.target).value)"
+                                       placeholder="Enter collection name">
+                            </div>
+                            <div class="form-group">
+                                <label for="newCollectionDescription">Collection Description</label>
+                                <textarea id="newCollectionDescription"
+                                          [value]="saveForm().newCollectionDescription"
+                                          (input)="updateSaveForm('newCollectionDescription', $any($event.target).value)"
+                                          placeholder="Optional description"
+                                          rows="2">
+                                </textarea>
+                            </div>
+                        }
+
+                        <!-- Error Message -->
+                        @if (saveError()) {
+                            <div class="save-error">
+                                <span class="error-icon">⚠</span>
+                                <span>{{ saveError() }}</span>
+                            </div>
+                        }
+                    }
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn-cancel" (click)="closeSaveModal()" [disabled]="saving()">
+                        Cancel
+                    </button>
+                    @if (!saveSuccess()) {
+                        <button class="btn-save-confirm"
+                                (click)="saveRequest()"
+                                [disabled]="saving() || !saveForm().name">
+                            @if (saving()) {
+                                Saving...
+                            } @else {
+                                Save Request
+                            }
+                        </button>
+                    }
+                </div>
+            </div>
         </div>
     }
 </div>
