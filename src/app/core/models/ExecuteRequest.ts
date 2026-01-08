@@ -10,6 +10,7 @@ export interface ExecuteRequest {
     headers: KeyValuePair[];
     queryParams: KeyValuePair[];
     body?: string;
+    formData?: KeyValuePair[];
     bodyType: BodyType;
     authType: AuthType;
     authConfig?: AuthConfig;

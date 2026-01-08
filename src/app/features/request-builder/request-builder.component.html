@@ -118,16 +118,37 @@
                                            [value]="type"
                                            [checked]="tab.request.bodyType === type"
                                            (change)="updateBodyType(type)">
-                                    {{ type }}
+                                    {{ type === 'FORM_DATA' ? 'Form Data' : type }}
                                 </label>
                             }
                         </div>
-                        @if (tab.request.bodyType !== 'NONE') {
+
+                        <!-- Form Data Editor -->
+                        @if (tab.request.bodyType === 'FORM_DATA') {
+                            <div class="form-data-section">
+                                <app-key-value-editor
+                                        [pairs]="tab.request.formData ?? [{key: '', value: '', enabled: true}]"
+                                        keyPlaceholder="Field name"
+                                        valuePlaceholder="Value"
+                                        (pairsChange)="updateFormData($event)">
+                                </app-key-value-editor>
+                            </div>
+                        }
+
+                        <!-- Text Body Editor (JSON, XML, RAW) -->
+                        @if (tab.request.bodyType !== 'NONE' && tab.request.bodyType !== 'FORM_DATA' && tab.request.bodyType !== 'BINARY') {
                             <textarea class="body-editor"
                                       [value]="tab.request.body || ''"
-                                      placeholder="Enter request body..."
+                                      [placeholder]="getBodyPlaceholder(tab.request.bodyType)"
                                       (input)="updateBody($any($event.target).value)">
                             </textarea>
+                        }
+
+                        <!-- Binary Upload (Future) -->
+                        @if (tab.request.bodyType === 'BINARY') {
+                            <div class="binary-upload">
+                                <p class="coming-soon">Binary file upload coming soon...</p>
+                            </div>
                         }
                     </div>
                 }
