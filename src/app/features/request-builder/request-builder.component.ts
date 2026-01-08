@@ -117,6 +117,13 @@ export class RequestBuilderComponent implements OnInit {
         }
     }
 
+    updateFormData(formData: KeyValuePair[]): void {
+        const tab = this.activeTab();
+        if (tab) {
+            this.stateService.updateTabRequest(tab.id, {formData});
+        }
+    }
+
     updateBodyType(bodyType: BodyType): void {
         const tab = this.activeTab();
         if (tab) {
@@ -311,5 +318,18 @@ export class RequestBuilderComponent implements OnInit {
     getHeadersCount(): number {
         const tab = this.activeTab();
         return tab ? tab.request.headers.filter(h => h.key).length : 0;
+    }
+
+    getBodyPlaceholder(bodyType: BodyType): string {
+        switch (bodyType) {
+            case BodyType.JSON:
+                return '{\n  "key": "value"\n}';
+            case BodyType.XML:
+                return '<?xml version="1.0"?>\n<root>\n  <element>value</element>\n</root>';
+            case BodyType.RAW:
+                return 'Enter raw body content...';
+            default:
+                return 'Enter request body...';
+        }
     }
 }
